@@ -1,1 +1,79 @@
+name: Build APK
 
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Jika kamu mengunggah game.zip lewat HP, file ini diekstrak dulu.
+      - name: Ekstrak game.zip (jika ada)
+        run: |
+          if [ -f game.zip ]; then
+            mkdir -p _game && unzip -o game.zip -d _game
+            cp -r _game/. . && rm -rf _game
+          fi
+          PKG=$(find . -maxdepth 3 -name package.json -not -path '*/node_modules/*' | head -1)
+          echo "Proyek ditemukan di: $PKG"
+          echo "PROJ=$(dirname "$PKG")" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Pasang dependensi
+        working-directory: ${{ env.PROJ }}
+        run: npm install --no-audit --no-fund
+
+      - name: Buat proyek Android
+        working-directory: ${{ env.PROJ }}
+        run: |
+          [ -d android ] || npx cap add android
+          MAN=android/app/src/main/AndroidManifest.xml
+          grep -q screenOrientation "$MAN" || sed -i 's/<activity/<activity android:screenOrientation="portrait"/' "$MAN"
+          STY=android/app/src/main/res/values/styles.xml
+          grep -q windowFullscreen "$STY" || sed -i '/<style name="AppTheme.NoActionBar"/a\        <item name="android:windowFullscreen">true</item>' "$STY"
+
+      - name: Buat ikon aplikasi (opsional)
+        continue-on-error: true
+        working-directory: ${{ env.PROJ }}
+        run: npx --yes @capacitor/assets generate --android --iconBackgroundColor '#070b24' --iconBackgroundColorDark '#070b24'
+
+      - name: Sinkronkan web ke Android
+        working-directory: ${{ env.PROJ }}
+        run: npx cap sync android
+
+      - name: Build APK (debug)
+        working-directory: ${{ env.PROJ }}/android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Ganti nama APK
+        run: cp "${{ env.PROJ }}/android/app/build/outputs/apk/debug/app-debug.apk" MenaraEmblem.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MenaraEmblem-APK
+          path: MenaraEmblem.apk
+
+      # APK juga muncul di tab Releases supaya gampang diunduh dari HP.
+      - name: Publikasikan ke Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Menara Emblem build ${{ github.run_number }}
+          files: MenaraEmblem.apk
