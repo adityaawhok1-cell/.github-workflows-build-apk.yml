@@ -1,6 +1,7 @@
 'use strict';
 // ====== Konstanta & data game ======
-const W = 320, H = 576, TS = 32, COLS = 10, ROWS = 11, MAPY = 48;
+// Layout logis landscape 16:9 (dirender ke resolusi asli layar)
+const VW = 960, VH = 540, TS = 54, COLS = 12, ROWS = 9, MAPX = 0, MAPY = 48;
 const STAR_MULT = { 3: 1, 4: 1.12, 5: 1.25 };
 const LV_CAP = 40;
 const MAX_FLOOR = 100;
