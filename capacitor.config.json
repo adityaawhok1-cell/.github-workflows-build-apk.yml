@@ -1,0 +1,7 @@
+{
+  "appId": "com.menaraemblem.game",
+  "appName": "Menara Emblem",
+  "webDir": "www",
+  "backgroundColor": "#05071a",
+  "android": { "allowMixedContent": false }
+}
