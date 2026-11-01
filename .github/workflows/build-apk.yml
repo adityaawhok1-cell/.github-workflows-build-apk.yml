@@ -26,7 +26,7 @@ jobs:
           java-version: '17'
       - name: Build APK
         run: |
-          npm init -y
+          echo '{"name":"menaraemblem","version":"1.0.0","private":true}' > package.json
           npm i @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
           npx cap init "Menara Emblem" com.menaraemblem.game --web-dir=www
           npx cap add android
